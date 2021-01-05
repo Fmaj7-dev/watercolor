@@ -1,73 +1,94 @@
 
 import sys
+from color import run
+from PySide6 import QtCore, QtWidgets, QtGui, QtUiTools
 import numpy as np
-from geneticalgorithm import geneticalgorithm as ga
-import json
 
-palette = []
-target = []
+class PaletteWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        print("PaletteWidget::init()")
+        self.hello = ["Hallo Welt", "Hei maailma", "Hola Mundo", "Привет мир"]
 
-#def getLinearCombination(palette, target):
-#    return [0.5, 0.5, 0.5]
+        self.button = QtWidgets.QPushButton("Click meeee!")
+        self.text = QtWidgets.QLabel("Hello Worldddd", alignment=QtCore.Qt.AlignCenter)
 
-def loadPalette():
-    with open('palette1.json') as f:
-        data = json.load(f)
-        global palette 
-        palette = np.matrix(data)
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(self.text)
+        self.layout.addWidget(self.button)
+        self.setLayout(self.layout)
 
-    print( "loaded palette of "+str(len(palette)) + " colors")
-    
-    #return np.matrix([ \
-    #[255, 0, 0],
-    #[0, 255, 0],
-    #[0, 0, 255]])
+class ImageWidget(QtWidgets.QGraphicsView):
+    def __init__(self):
+        print("ImageWidget::init()")
+        super(ImageWidget, self).__init__()
+        self.scene = QtWidgets.QGraphicsScene(self)
 
-def getLoss(palette, target, lc):
-    mse = (np.square(target - lc*palette)).mean(axis=1)
-    return float(mse)
+        self.background = QtGui.QPixmap("./palette.jpg")
+        self.scene.addPixmap(self.background)
 
-def f(lc):
-    global palette
-    global target
+        self.setScene( self.scene )
+        self.setCacheMode( QtWidgets.QGraphicsView.CacheBackground )
+        self.setViewportUpdateMode( QtWidgets.QGraphicsView.BoundingRectViewportUpdate )
+        self.setRenderHint( QtGui.QPainter.Antialiasing )
+        self.setTransformationAnchor( QtWidgets.QGraphicsView.AnchorUnderMouse )
+        self.setResizeAnchor( QtWidgets.QGraphicsView.AnchorViewCenter )
 
-    mse = (np.square(target - lc*palette)).mean(axis=1)
-    return np.sum(mse)
-    
-def run(r, g, b):
-    global target
-    global palette
-    loadPalette()
-    target = np.matrix([r, g, b])
-    #lc = getLinearCombination(palette, target )
+class MainWindow(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
 
-    # ga
-    varbound=np.array([[0,1]] * len(palette))
-    algorithm_parameters={'max_num_iteration': 200,\
-                                       'population_size':100,\
-                                       'mutation_probability':0.1,\
-                                       'elit_ratio': 0.01,\
-                                       'crossover_probability': 0.5,\
-                                       'parents_portion': 0.3,\
-                                       'crossover_type':'uniform',\
-                                       'max_iteration_without_improv':None}
-    model=ga(function=f, dimension=len(palette), variable_type='real', variable_boundaries=varbound, convergence_curve=False, algorithm_parameters=algorithm_parameters)
-    #print(model.param)
-    model.run()
+"""
+        self.paletteWidget = PaletteWidget()
+        self.imageWidget = ImageWidget()
 
-    print("output is: ")
-    output = np.matrix(model.output_dict['variable'])
-    output /= output.max()
-    print(output)
+        self.paletteWidget.show()
+        self.imageWidget.show()
 
-    # get most important indices
-    print(np.asarray(output).reshape(-1).argsort()[-3:][::-1])
-    
-    #type(output)
+        self.layout = QtWidgets.QHBoxLayout()
+        self.layout.addWidget(self.paletteWidget)
+        self.layout.addWidget(self.imageWidget)
+"""
+        #self.setAutoFillBackground(True)
+        #p = self.palette()
+        #p.setColor(QtGui.QPalette.Window, QtGui.QColor(int(color[0]),int(color[1]),int(color[2]),255))
+        #self.setPalette(p)
 
-    #print(output)
-    #loss = getLoss(palette, target, lc)
-    #print(loss)
+class MyWidget(QtWidgets.QWidget):
+    def __init__(self, app):
+        super(MyWidget, self).__init__()
+
+        self.app = app
+
+        # load widget
+        loader = QtUiTools.QUiLoader()
+        file = QtCore.QFile("./mainwindow.ui")
+        file.open(QtCore.QFile.ReadOnly)
+        self.widget = loader.load(file, self)
+        file.close()
+
+        # configure graphics
+        self.background = QtGui.QPixmap("./palette.jpg")
+        
+        self.scene = QtWidgets.QGraphicsScene(self.widget.graphicsView)
+        self.scene.addPixmap(self.background)
+        self.widget.graphicsView.resize(self.background.size().width(), self.background.size().height() )
+        self.widget.graphicsView.setScene(self.scene)
+        self.widget.resize(self.background.size().width(), self.background.size().height() )
+
+        # colors
+        self.widget.color1.setStyleSheet("background-color:rgb(255,0,0)")
+        self.widget.color2.setStyleSheet("background-color:rgb(255,255,0)")
+
+    def run(self):
+        self.widget.show()
+        sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    run( int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]) )
+    """color = run( int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]) )
+    print("color:")
+    print(color)"""
+
+    app = QtWidgets.QApplication([])
+    myWidget = MyWidget(app)
+    myWidget.run()
